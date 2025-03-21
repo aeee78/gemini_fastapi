@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Gemini Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    .container {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      width: 90%;
+      max-width: 600px;
+      margin-top: 40px;
+      overflow: hidden;
+    }
+    header {
+      background: #5563DE;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    #chat {
+      padding: 20px;
+      height: 400px;
+      overflow-y: auto;
+      background: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 16px;
+      line-height: 1.4;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .message.user {
+      background: #d1e7dd;
+      text-align: right;
+      align-self: flex-end;
+    }
+    .message.bot {
+      background: #f8d7da;
+      text-align: left;
+      align-self: flex-start;
+    }
+    .input-area {
+      display: flex;
+      padding: 20px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
+    textarea {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+      resize: none;
+      outline: none;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      margin-left: 10px;
+    }
+    .controls button {
+      padding: 10px 16px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 4px;
+      background-color: #5563DE;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .controls button:hover {
+      background-color: #3e4bb8;
+    }
+    @media (max-width: 480px) {
+      .controls {
+        flex-direction: row;
+        margin-left: 5px;
+      }
+      .controls button {
+        margin: 0 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Gemini Chat</h1>
+    </header>
+    <div id="chat"></div>
+    <div class="input-area">
+      <textarea id="messageInput" rows="2" placeholder="Введите сообщение..."></textarea>
+      <div class="controls">
+        <button onclick="sendMessage()">Отправить</button>
+        <button onclick="startNewChat()">Новый чат</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+    let sessionId = null;
+    
+    async function startNewChat() {
+      const response = await fetch(API_URL + "/chat/start", { method: "POST" });
+      const data = await response.json();
+      sessionId = data.session_id;
+      clearChat();
+      addMessage("bot", data.welcome_message);
+    }
+    
+    async function sendMessage() {
+      const text = document.getElementById("messageInput").value.trim();
+      if (!sessionId) {
+        alert("Сначала нажмите кнопку 'Новый чат'");
+        return;
+      }
+      if (!text) return;
+      
+      addMessage("user", text);
+      
+      const response = await fetch(API_URL + "/chat/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, text: text })
+      });
+      const data = await response.json();
+      addMessage("bot", data.text);
+      document.getElementById("messageInput").value = "";
+    }
+    
+    function addMessage(sender, text) {
+      const chat = document.getElementById("chat");
+      const div = document.createElement("div");
+      div.className = "message " + sender;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    
+    function clearChat() {
+      document.getElementById("chat").innerHTML = "";
+    }
+    
+    // Автоматически создаём новый чат при загрузке страницы
+    startNewChat();
+  </script>
+</body>
+</html>
